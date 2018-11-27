@@ -1,0 +1,246 @@
+---
+title: "Stats 506 Group Project"
+author: "Group 4 (Lizhuang Sun, Lan Yue, Tzvi Hersh Gluck)"
+date: "November 26, 2018"
+output: html_document
+---
+
+## Introduction to ordinal logistic regression
+
+Ordinal logistic regression is applied when the dependent variable is measured at the ordinal level, given one or more independent variables, which could be ordinal, continuous and categorical. Usually, there're two assumptions that needs to be checked for the ordinal logistic regression, no multicollinearity and existence of proportional odds. 
+
+## Description of the Data
+
+In this tutorial, we will use the "soup" data from the R package "Ordinal". The dataset represents the ratings of sample soup from 185 respondents, including 'sureness' as the ratings, and other descriptive variables, such as 'souptype', 'gender' and 'age'. By fitting ordinal logistic regression model to the data, we desire to determine the factors that will significantly influence the soup rating, and also explore the marginal effects of the factors of interest.  We will display the data manipulation and analysis in three different languages, R, STATA and SAS.
+
+## Implementation
+
+### Ordinal Logistic Regression in SAS
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+```
+
+Similar in R and STATA, the first step is to import the data into the workspace. 
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+proc import datafile='/folders/myfolders/soup.csv'
+out=work.soup
+dbms=CSV;
+run;
+```
+
+To view first ten rows of data. 
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+proc print data=soup (obs=10);
+run;
+```
+
+As we planned to fit the model based on the dependent variable 'sureness', it would be desired to explore the frequency and means of the variable 'sureness'.
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+proc freq data=soup;
+tables SURENESS;
+run;
+
+proc means data=soup;
+var SURENESS;
+run;
+```
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("sas3g.png")
+```
+
+From the table above, it's clear that 'sureness' has higher proportion in higher end, 5 or 6, which will results in a high mean value as 4.3768.
+
+Next, we pick the factors of interest and check whether they will have potential effects on the dependent variable 'sureness'. 
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+proc freq data=soup;
+tables SURENESS*SOUPTYPE / norow nocol missprint;
+tables SURENESS*SOUPFREQ / norow nocol missprint;
+tables SURENESS*COLD / norow nocol missprint;
+run;
+```
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("sas4g1.png")
+include_graphics("sas4g2.png")
+include_graphics("sas4g3.png")
+```
+
+The tables above suggests that the binary variable 'cold' and categorical variable 'souptype' cause some difference in 'sureness, while 'soupfreq' does not show effects on 'sureness'. Therefore, a model 'sureness ~ souptype + cold' is fitted to the data. 
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+proc logistic data=soup desc;
+class SOUPTYPE(ref='Self-made') COLD(ref='No') / param=reference;
+model SURENESS= SOUPTYPE COLD ;
+estimate "Pr prob SURENESS=2 at SOUPTYPE='Canned' " intercept 1  SOUPTYPE 1 COLD 1/ ilink category='2';
+estimate "Pr prob SURENESS=2 at SOUPTYPE='Dry-mix' " intercept 1 SOUPTYPE 2 COLD 1/ ilink category='2';
+
+run;
+```
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("sas5g1.png")
+```
+
+From the test above, because the p-value is smaller than 0.05, the null hypothesis can be rejected and the proportional odds assumption is valid for the model.
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("sas5g2.png")
+```
+
+From the table above, the 'souptype' has p-value smaller than 0.05 while 'cold' does not, which indicates that only 'souptype' is a significant variable in explaining the variance. In terms of the coefficients, for example, when 'souptype' changes from 'self-made' to 'canned', the sureness will decrease by 0.2050, given that all of the other variables in the model are held constant. 
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("sas5g3.png")
+```
+
+Then table above shows that for sureness =2, the predicted probability for 'dry-mix' and 'canned' soup are 0.8582 and 0.8814 correspondingly. These numbers are different from those in R and STATA, because the order of variable 'sureness' is different, as indicated by the opposite sign of intercepts in SAS from those in R and STATA. 
+
+
+### Ordinal Logistic Regression in R
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+library(MASS)
+library(data.table)
+library(ordinal)
+```
+
+After importing the data into the workspace, we see the first six rows of data. 
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+data(soup)
+soup_test = data.table(soup)
+head(soup_test)
+```
+
+This data set has a six level variable called "SURENESS", which is the respondents ratings of soup samples, that we will use as our outcome variable. We also have two variables that we will use as predictors: "SOUPTYPE", with three types canned, dry-mix and self-made; "COLD", which is a Yes/No variable where Yes indicates that respondent have a cold. Let's start with the descriptive statistics of these variables.
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+lapply(soup_test[,c("SOUPTYPE", "COLD", "SURENESS")], table)
+ftable(xtabs(~ SOUPTYPE + COLD + SURENESS, data = soup_test))
+```
+
+Below we use the polr command from the MASS package to estimate an ordered logistic regression model. 
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+m = polr(SURENESS ~ SOUPTYPE + COLD, data = soup_test, Hess = TRUE)
+summary(m)
+```
+
+To add p-values, first we store the coefficient table, then calculate the pvalues and combine back with the table.
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+(ctable = coef(summary(m)))
+p = pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+(ctable = cbind(ctable, "p value" = p))
+```
+
+We can also get confidence intervals for the parameter estimates. If the 95% CI does not cross 0, the parameter estimate is statistically significant.
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+(ci = confint(m))
+```
+
+From the table above, the CIs of 'souptype' canned do not inclide 0 while the CIs of 'cold' does, which indicates that only 'souptype' is a significant variable in explaining the variance. 
+
+To get the odd ratios and confidence intervals, we just exponentiate the estimates and confidence intervals.
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+exp(coef(m))
+exp(cbind(OR = coef(m), ci))
+```
+
+These coefficients are called proportional odds ratios and we would interpret these pretty much as we would odds ratios from a binary logistic regression. For cold, we would say that for a one unit increase in cold, the odds of sureness 1  versus sureness higher rate combined are 1.27 greater, given that all of the other variables in the model are held constant.
+
+Last, we can obtain predicted probabilities, which are usually easier to understand than either the coefficients or the odds ratios.
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+newdat = data.frame(SOUPTYPE = soup_test$SOUPTYPE,
+                    COLD = soup_test$COLD)
+newdat_p = cbind(newdat, predict(m, newdat, type = "probs"))
+deduped.data = unique(newdat_p[, 1:8])
+deduped.data
+```
+
+Then table above shows that for sureness = 2 and cold = Yes, the predicted probability for 'dry-mix' and 'canned' soup are 0.1049 and 0.1374 correspondingly. 
+
+
+### Ordinal Logistic Regression in Stata
+
+The first part of the code was to read in the data:
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+import delimited "soup_data.csv"
+```
+
+Next we looked at the first five rows to get an idea of the data set
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+list if v1 <=5
+```
+
+The next step was to look at the variable sureness as we were using this variable as the response variable. We created some frequency and contingency tables for the variable with possible predictor variables:
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+tab sureness
+```
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("stata3g.png")
+```
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+tab sureness souptype2
+```
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("stata4g.png")
+```
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+tab sureness cold2
+```
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("stata5g.png")
+```
+
+The predictor variables we chose were souptype and cold so the model was fit as:
+Sureness ~ souptype + cold.
+
+Souptype and cold were recoded as numbers so they would be easier to use as factors. 
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+gen cold2 = 1 if cold == "Yes"
+replace cold2 = 0 if cold == "No"
+
+gen souptype2 = 0 if souptype == "Self-made"
+replace souptype2 = 1 if souptype == "Canned"
+replace souptype2 = 2 if souptype == "Dry-mix"
+```
+
+The summary for the model is shown below:
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("stata6g1.png")
+```
+
+Looking at the chi-squared test since p-value is equal to .0045, which is less than .05, we can reject the null hypothesis that no relationship exists. 
+
+Below is a prediction for the percent for sureness equal to two and souptype equal to canned and dry-mix and the soup being cold, as well as a graph with a 95% confidence interval for the prediction of sureness given the souptype and cold. 
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+include_graphics("stata6g2.png")
+include_graphics("stata6g3.png")
+```
+
+
+
+
+## References
+UCLA Institute for Digital Research and Education
