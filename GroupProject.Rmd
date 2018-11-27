@@ -5,7 +5,7 @@ date: "November 26, 2018"
 output: html_document
 ---
 
-## Introduction to ordinal logistic regression
+## Introduction to Ordinal Logistic Regression
 
 Ordinal logistic regression is applied when the dependent variable is measured at the ordinal level, given one or more independent variables, which could be ordinal, continuous and categorical. Usually, there're two assumptions that needs to be checked for the ordinal logistic regression, no multicollinearity and existence of proportional odds. 
 
