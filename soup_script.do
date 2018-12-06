@@ -1,7 +1,12 @@
+/*Importing the data set*/
 import delimited "soup_data.csv"
 
-list if v1 <=5
+/*Showing the first five rows of the data*/
+list if v1 <= 10
 
+/*Creating variables as numbers so they can be treated*/
+/*As factors. When trying to run ologit on the character*/
+/*was not able to treat as factors*/
 gen gender2 = 1 if gender == "Male"
 replace gender2 = 0 if gender == "Female"
 
@@ -21,31 +26,20 @@ gen location2 = 0 if location == "Region 1"
 replace location2 = 1 if location == "Region 2"
 replace location2 = 2 if location == "Region 3"
 
-
-
-
+/*descriptive statistics of the variables of interest*/
 tab sureness
+tabstat sureness, s(n mean SD)
 
 tab sureness souptype2
 
 tab sureness cold2
 
+/*ordinal logistic regression and odds ratios*/
 ologit sureness i.souptype2 i.cold2
-ologit sureness i.souptype2 i.cold2, or
 
+/*margins command so that we can make predictions*/
 margins souptype2 cold2
 
+/*making predictions at souptype 1,2 and cold = 1 and then plotting*/
 margins, at(souptype2 = (1/2) cold2 = 1) predict(outcome(2)) 
-marginsplot, recast(line) recastci(rarea)
-margins, at(souptype2 = (0/2)) atmeans vsquish post
-marginsplot, recast(line) recastci(rarea)
-ologit sureness i.souptype2 i.cold2, or
-
-omodel logit sureness souptype2 cold2
-
-gologit2 sureness souptype2 cold2, npl
-
-lrtest, saving(0)
-
-ologit sureness i.souptype2 i.cold2
-lrtest
+marginsplot, recast(line) recastci(rarea) xtitle("Soup Type") ytitle("Prob.")
