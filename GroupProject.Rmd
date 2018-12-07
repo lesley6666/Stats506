@@ -288,7 +288,7 @@ include_graphics("stata6g1.png")
 
 Looking at the chi-squared test since p-value is equal to .0045, which is less than .05, we can reject the null hypothesis that no relationship exists. 
 
-Below is a prediction for the percent for sureness equal to two and souptype equal to canned and dry-mix and the soup being cold, as well as a graph with a 95% confidence interval for the prediction of sureness given the souptype and cold. 
+Below is a prediction for the percent for sureness equal to two and souptype equal to canned and dry-mix and the respondent having a cold, as well as a graph with a 95% confidence interval for the prediction of sureness given the souptype and cold.  
 
 ```{r, echo = TRUE, message=FALSE, warning=FALSE, eval=FALSE}
 margins souptype2 cold2
