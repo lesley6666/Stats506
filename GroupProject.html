@@ -333,7 +333,7 @@ p = pnorm(abs(ctable[, &quot;t value&quot;]), lower.tail = FALSE) * 2
 ## SOUPTYPECanned  -0.39269077 -0.01711287
 ## SOUPTYPEDry-mix -0.05050130  0.43752670
 ## COLDYes         -0.01016799  0.49393046</code></pre>
-<p>From the table above, the CIs of ‘souptype’ canned do not inclide 0 while the CIs of ‘cold’ does, which indicates that only ‘souptype’ is a significant variable in explaining the variance.</p>
+<p>From the table above, the CIs of ‘souptype’ canned do not include 0 while the CIs of ‘cold’ does, which indicates that only ‘souptype’ is a significant variable in explaining the variance.</p>
 <p>To get the odd ratios and confidence intervals, we just exponentiate the estimates and confidence intervals.</p>
 <pre class="r"><code>exp(coef(m))</code></pre>
 <pre><code>##  SOUPTYPECanned SOUPTYPEDry-mix         COLDYes 

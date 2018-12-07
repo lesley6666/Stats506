@@ -190,7 +190,7 @@ We can also get confidence intervals for the parameter estimates. If the 95% CI 
 (ci = confint(m))
 ```
 
-From the table above, the CIs of 'souptype' canned do not inclide 0 while the CIs of 'cold' does, which indicates that only 'souptype' is a significant variable in explaining the variance. 
+From the table above, the CIs of 'souptype' canned do not include 0 while the CIs of 'cold' does, which indicates that only 'souptype' is a significant variable in explaining the variance. 
 
 To get the odd ratios and confidence intervals, we just exponentiate the estimates and confidence intervals.
 
